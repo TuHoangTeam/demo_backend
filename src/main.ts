@@ -14,9 +14,18 @@ function createWinstonOptions() {
   const isProduction = process.env.NODE_ENV === 'production';
 
   const consoleFormat = winston.format.combine(
-    winston.format.timestamp(),
+    winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
     winston.format.colorize(),
-    winston.format.simple(),
+    winston.format.printf(
+      ({ timestamp, level, message, context, ...meta }) => {
+        const contextString = context ? ` [${context}]` : '';
+        const metaString = Object.keys(meta).length
+          ? `\n${JSON.stringify(meta, null, 2)}`
+          : '';
+
+        return `${timestamp} ${level}${contextString}: ${message}${metaString}`;
+      },
+    ),
   );
 
   const transports: winston.transport[] = [];
