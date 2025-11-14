@@ -1,11 +1,12 @@
 import { Logger } from '@nestjs/common';
 import { defineConfig } from '@mikro-orm/postgresql';
 import { User } from './entities/User';
+import { Product } from './entities/Product';
 
 const logger = new Logger('MikroORM');
 
 export default defineConfig({
-  entities: [User],
+  entities: [User, Product],
   dbName: 'mobile-demo',
   port: 5432,
   debug: true,
