@@ -3,6 +3,7 @@ import { MikroOrmModule } from '@mikro-orm/nestjs';
 
 import { User } from '../entities/User';
 import { Product } from '../entities/Product';
+import { ReviewsModule } from './reviews/reviews.module';
 
 @Module({
   imports: [
@@ -10,6 +11,7 @@ import { Product } from '../entities/Product';
     MikroOrmModule.forFeature({
       entities: [User, Product],
     }),
+    ReviewsModule,
   ],
   exports: [MikroOrmModule],
 })
