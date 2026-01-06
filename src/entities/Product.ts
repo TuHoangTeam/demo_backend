@@ -1,4 +1,5 @@
-import { Entity, PrimaryKey, Property, Opt } from '@mikro-orm/core';
+import { Entity, PrimaryKey, Property, ManyToOne } from '@mikro-orm/core';
+import { User } from './User';
 
 @Entity()
 export class Product {
@@ -6,23 +7,29 @@ export class Product {
   id!: number;
 
   @Property()
-  createdAt: Date & Opt = new Date();
+  name!: string;
 
-  @Property({ onUpdate: () => new Date() })
-  updatedAt: Date & Opt = new Date();
-
-  @Property()
-  name: string;
-
-  @Property()
-  price: number;
-
-  @Property({ nullable: true })
+  // Dùng columnType: 'text' để lưu mô tả dài
+  @Property({ columnType: 'text' })
   description?: string;
 
-  constructor(name: string, price: number, description?: string) {
-    this.name = name;
-    this.price = price;
-    this.description = description;
-  }
+  @Property()
+  status!: string; 
+
+  @Property()
+  price!: number;
+
+  @Property()
+  available: boolean = true;
+
+  @ManyToOne(() => User)
+  owner!: User;
+
+  // FIX QUAN TRỌNG: Thêm dấu ? để TypeScript hiểu đây là optional khi tạo mới
+  @Property({ onCreate: () => new Date() })
+  createdAt?: Date = new Date();
+
+  // FIX QUAN TRỌNG: Thêm dấu ?
+  @Property({ onUpdate: () => new Date() })
+  updatedAt?: Date = new Date();
 }

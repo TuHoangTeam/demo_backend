@@ -20,12 +20,12 @@ export class ProductResponseDto {
   @ApiProperty()
   updatedAt: Date;
 
-  constructor(entity: Product) {
-    this.id = entity.id;
-    this.name = entity.name;
-    this.price = entity.price;
-    this.description = entity.description;
-    this.createdAt = entity.createdAt;
-    this.updatedAt = entity.updatedAt;
-  }
+  // constructor(entity: Product) {
+  //   this.id = entity.id;
+  //   this.name = entity.name;
+  //   this.price = entity.price;
+  //   this.description = entity.description;
+  //   this.createdAt = entity.createdAt;
+  //   this.updatedAt = entity.updatedAt;
+  // }
 }

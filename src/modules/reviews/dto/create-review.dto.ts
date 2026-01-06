@@ -1,17 +1,22 @@
-import { IsString, IsInt, Min, Max, IsOptional, IsPositive } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
+import { IsString, IsInt, Min, Max } from 'class-validator';
 
 export class CreateReviewDto {
+  @ApiProperty({ example: 5, description: 'Rating 1-5' })
   @IsInt()
   @Min(1)
   @Max(5)
-  rating: number;
+  rating!: number;
 
+  @ApiProperty({ example: 'Giao dịch nhanh gọn, hàng tốt' })
   @IsString()
-  @IsOptional()
-  comment?: string;
+  comment!: string;
 
-  // --- PHẢI CÓ TRƯỜNG NÀY ---
+  @ApiProperty()
   @IsInt()
-  @IsPositive() // Đảm bảo là số dương
-  productId: number;
+  userId!: number; // Người viết review
+
+  @ApiProperty()
+  @IsInt()
+  productId!: number; // Sản phẩm được review
 }

@@ -33,8 +33,7 @@ export class ReviewsService {
     const review = this.reviewRepo.create({
       ...createReviewDto, 
       userId: userId,
-      createdAt: new Date(), 
-      updatedAt: new Date(), 
+      createdAt: new Date(),
     });
 
     

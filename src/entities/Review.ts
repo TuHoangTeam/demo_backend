@@ -1,28 +1,25 @@
-import { Entity, PrimaryKey, Property, ManyToOne, Unique } from '@mikro-orm/core';
-import { Product } from './Product'; // Giả định bạn có file này
-import { User } from './User'; // Giả định bạn có file này
+import { Entity, PrimaryKey, Property, ManyToOne } from '@mikro-orm/core';
+import { User } from './User';
+import { Product } from './Product';
 
 @Entity()
- // Đảm bảo 1 user chỉ review 1 product 1 lần
 export class Review {
   @PrimaryKey()
-  id: number;
-
-  @Property({ type: 'smallint', default: 5 })
-  rating: number;
-
-  @Property({ type: 'text', nullable: true })
-  comment?: string;
-
-  @Property({ type: 'number' })
-  productId: number;
-
-  @Property({ type: 'number' })
-  userId: number;
+  id!: number;
 
   @Property()
-  createdAt: Date = new Date();
+  rating!: number;
 
-  @Property({ onUpdate: () => new Date() })
-  updatedAt: Date = new Date();
+  @Property({ columnType: 'text' })
+  comment!: string;
+
+  @ManyToOne(() => User)
+  userId!: User;
+
+  @ManyToOne(() => Product)
+  productId!: Product;
+
+  // SỬA Ở ĐÂY: Thêm dấu ? vào sau createdAt
+  @Property({ onCreate: () => new Date() })
+  createdAt?: Date = new Date();
 }

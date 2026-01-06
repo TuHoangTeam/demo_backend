@@ -1,22 +1,31 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsNumber, IsOptional, IsString, Min } from 'class-validator';
+import { IsString, IsInt, IsBoolean, IsNotEmpty, IsOptional } from 'class-validator';
 
 export class CreateProductDto {
-  @ApiProperty({ example: 'Áo phông nam Cotton' })
+  @ApiProperty({ example: 'iPhone 11 Cũ' })
   @IsString()
   @IsNotEmpty()
-  name: string;
+  name!: string;
 
-  @ApiProperty({ example: 350000 })
-  @IsNumber()
-  @Min(0)
-  price: number;
-
-  @ApiProperty({
-    example: 'Áo phông chất liệu cotton thoáng mát',
-    required: false,
-  })
+  @ApiProperty({ example: 'Máy còn mới 90%, trầy xước nhẹ' })
   @IsString()
+  description!: string;
+
+  @ApiProperty({ example: 'Used' })
+  @IsString()
+  status!: string;
+
+  @ApiProperty({ example: 5000000 })
+  @IsInt()
+  price!: number;
+  
+  // Mặc định tạo mới sẽ là available, nhưng cứ để đây nếu cần
+  @ApiProperty({ example: true, required: false })
+  @IsBoolean()
   @IsOptional()
-  description?: string;
+  available?: boolean = true;
+
+  @ApiProperty({ example: 1, description: 'ID của người bán' })
+  @IsInt()
+  ownerId!: number;
 }
