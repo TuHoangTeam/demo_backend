@@ -1,4 +1,4 @@
-import { Entity, PrimaryKey, Property, ManyToOne, Enum } from '@mikro-orm/core';
+import { Entity, PrimaryKey, Property, ManyToOne, Enum, Collection, OneToMany } from '@mikro-orm/core';
 import { User } from '../user/User';
 import { Category } from './Category';
 
@@ -30,14 +30,14 @@ export class Item {
   @ManyToOne(() => User)
   owner!: User;
 
-  @ManyToOne(() => Category)
-  category!: Category;
-
   @Property()
   title!: string;
 
   @Property({ columnType: 'text' })
   description!: string;
+
+  @ManyToOne(() => Category)
+  category!: Category;
 
   @Enum(() => ItemCondition)
   condition!: ItemCondition;
@@ -45,24 +45,22 @@ export class Item {
   @Enum(() => ItemType)
   type!: ItemType;
 
-  @Property({ type: 'text[]', default: [] })
-  images: string[] = []; // Đã có default, mảng rỗng ok
+  @Property({ type: 'json', nullable: true })
+  images?: string[] = []; // Array URL ảnh
 
   @Property()
   location!: string;
 
-  @Property({ type: 'double', default: 0 })
+  @Property({ type: 'double' })
   latitude!: number;
 
-  @Property({ type: 'double', default: 0 })
+  @Property({ type: 'double' })
   longitude!: number;
 
+  // SỬA: Thêm dấu ? vào các trường có default
   @Enum(() => ItemStatus)
-  status: ItemStatus = ItemStatus.AVAILABLE;
+  status?: ItemStatus = ItemStatus.AVAILABLE;
 
-  // --- SỬA CÁC DÒNG DƯỚI ĐÂY ---
-  // Thêm dấu ? vào views, favorites, estimatedCO2, createdAt, updatedAt
-  
   @Property({ default: 0 })
   views?: number = 0;
 

@@ -14,11 +14,11 @@ export class WishlistMatch {
   item!: Item;
 
   @Property()
-  matchScore!: number; // Điểm khớp 0-100
+  matchScore!: number;
 
   @Property({ default: false })
-  notified: boolean = false;
+  notified?: boolean = false; // Thêm ?
 
   @Property({ onCreate: () => new Date() })
-  createdAt: Date = new Date();
+  createdAt?: Date = new Date(); // Thêm ?
 }

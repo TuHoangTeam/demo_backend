@@ -38,8 +38,11 @@ export class ItemResponseDto {
   @ApiProperty()
   views: number;
 
-  @ApiProperty()
-  favorites: number;
+  @ApiProperty({ nullable: true })
+  distance?: number; 
+
+  @ApiProperty({ nullable: true })
+  isFavorited?: boolean;
 
   @ApiProperty()
   createdAt: Date;
@@ -55,13 +58,13 @@ export class ItemResponseDto {
   @ApiProperty({ nullable: true })
   owner?: { id: string; name: string; avatar?: string; rating: number };
 
-  constructor(item: Item) {
+  constructor(item: Item, distance?: number, isFavorited?: boolean) {
     this.id = item.id;
     this.title = item.title;
     this.description = item.description;
     this.condition = item.condition;
     this.type = item.type;
-    this.status = item.status;
+    this.status = item.status ?? ItemStatus.AVAILABLE;
     this.location = item.location;
     this.latitude = item.latitude;
     this.longitude = item.longitude;
@@ -70,7 +73,8 @@ export class ItemResponseDto {
     // Các trường số/ngày tháng cần fallback ?? để tránh undefined
     this.estimatedCO2 = item.estimatedCO2 ?? 0;
     this.views = item.views ?? 0;
-    this.favorites = item.favorites ?? 0;
+    this.distance = distance;
+    this.isFavorited = isFavorited ?? false;
     this.createdAt = item.createdAt ?? new Date();
     this.updatedAt = item.updatedAt ?? new Date();
 
@@ -89,7 +93,6 @@ export class ItemResponseDto {
         id: item.owner.id,
         name: item.owner.name,
         avatar: item.owner.avatar,
-        // SỬA 3: item.owner.rating có thể undefined trong Entity User, cần ?? 0
         rating: item.owner.rating ?? 0, 
       };
     }

@@ -49,11 +49,14 @@ export default defineConfig({
     Notification,
     Report
   ],
-  dbName: 'mobile-demo',
-  port: 5432,
-  debug: true,
-  logger: logger.log.bind(logger),
+  // Ưu tiên lấy từ biến môi trường, fallback về giá trị mặc định local
+  dbName: process.env.DB_NAME || 'mobile-demo',
+  host: process.env.DB_HOST || 'localhost',
+  port: parseInt(process.env.DB_PORT || '5432', 10),
+  
+  user: process.env.DB_USERNAME || 'postgres',
+  password: process.env.DB_PASSWORD || 'postgres',
 
-  user: process.env.POSTGRES_USERNAME ?? 'postgres',
-  password: process.env.POSTGRES_PASSWORD ?? 'postgres'
+  debug: process.env.NODE_ENV !== 'production',
+  logger: logger.log.bind(logger),
 });

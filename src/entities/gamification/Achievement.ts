@@ -25,23 +25,23 @@ export class Achievement {
   description!: string;
 
   @Property()
-  icon!: string; // URL icon hoặc tên icon
+  icon!: string;
 
   @Enum(() => AchievementType)
   type!: AchievementType;
 
   @Property()
-  requirement!: number; // Ví dụ: Cần 10 món đồ để đạt được
+  requirement!: number;
 
   @Property()
-  rewardPoints!: number; // Điểm thưởng khi đạt được
+  rewardPoints!: number;
 
   @Enum(() => AchievementStatus)
-  status: AchievementStatus = AchievementStatus.ACTIVE;
+  status?: AchievementStatus = AchievementStatus.ACTIVE;
 
   @Property({ onCreate: () => new Date() })
-  createdAt: Date = new Date();
+  createdAt?: Date = new Date();
 
   @Property({ onUpdate: () => new Date() })
-  updatedAt: Date = new Date();
+  updatedAt?: Date = new Date();
 }

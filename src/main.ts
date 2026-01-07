@@ -1,11 +1,10 @@
-import 'dotenv/config'; // Very important!
+import 'dotenv/config'; 
 
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { MikroORM } from '@mikro-orm/core';
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
-// Import interface của Express Adapter
 import { NestExpressApplication } from '@nestjs/platform-express'; 
 import { join } from 'path';
 
@@ -48,47 +47,64 @@ function createWinstonOptions() {
 }
 
 async function bootstrap() {
-  // --- SỬA LỖI Ở ĐÂY ---
-  // Thêm <NestExpressApplication> để ép kiểu ứng dụng về Express
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     logger: WinstonModule.createLogger(createWinstonOptions()),
   });
 
-  // Tự động tạo bảng nếu chưa có (Chỉ nên dùng khi dev, production nên dùng migration)
-  // Lưu ý: Cần chắc chắn MikroORM đã kết nối thành công trước khi chạy dòng này
+  // Tự động update schema DB (Chỉ dùng cho dev)
   try {
     const orm = app.get(MikroORM);
     const generator = orm.getSchemaGenerator();
     await generator.ensureDatabase();
     await generator.updateSchema(); 
   } catch (error) {
-    console.error('Lỗi khởi tạo database:', error);
+    console.error('Database connection error:', error);
   }
 
+  // Validate dữ liệu đầu vào
   app.useGlobalPipes(new ValidationPipe({
     whitelist: true,
     forbidNonWhitelisted: true,
+    transform: true, // Tự động convert kiểu dữ liệu (vd: string -> number)
   }));
 
-  // Bây giờ dòng này sẽ chạy ngon lành vì app đã hiểu là NestExpressApplication
+  // Serve static files (ảnh upload)
   app.useStaticAssets(join(__dirname, '..', 'uploads'), {
     prefix: '/uploads/', 
   });
 
+  // Cấu hình Swagger API Doc
   const swaggerConfig = new DocumentBuilder()
-    .setTitle('Mobile Demo API')
-    .setDescription('API documentation for Mobile Application Development demo')
+    .setTitle('Give & Take API')
+    .setDescription('API documentation for Give & Take Mobile App')
     .setVersion('1.0')
-    .addTag('user')
+    // Thêm xác thực Bearer Token (JWT) cho Swagger
+    .addBearerAuth() 
+    // Thêm các tag để nhóm API cho đẹp
+    .addTag('auth', 'Authentication')
+    .addTag('users', 'User Management')
+    .addTag('items', 'Item & Discovery')
+    .addTag('transactions', 'Transaction Process')
+    .addTag('ratings', 'Rating & Reviews')
+    .addTag('wishlists', 'Wishlist & Matching')
+    .addTag('notifications', 'System Notifications')
+    .addTag('favorites', 'User Favorites')
+    .addTag('categories', 'System Categories')
+    .addTag('reports', 'User Reports')
+    .addTag('stats', 'System Statistics')
+    .addTag('achievements', 'Gamification & Rewards')
+    .addTag('points', 'Point System')
+    .addTag('eco', 'Eco Impact')
     .build();
 
   const document = SwaggerModule.createDocument(app, swaggerConfig);
   SwaggerModule.setup('api', app, document);
   
-  // Bật CORS để frontend/mobile gọi được API
   app.enableCors();
 
-  await app.listen(process.env.PORT ?? 3000);
+  const port = process.env.PORT || 3000;
+  await app.listen(port);
   console.log(`Application is running on: ${await app.getUrl()}`);
+  console.log(`Swagger Docs available at: ${await app.getUrl()}/api`);
 }
 bootstrap();

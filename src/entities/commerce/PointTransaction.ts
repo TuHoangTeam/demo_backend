@@ -1,5 +1,5 @@
 import { Entity, PrimaryKey, Property, ManyToOne, Enum } from '@mikro-orm/core';
-import { User } from '../user/User'; // Nhớ check đường dẫn import
+import { User } from '../user/User';
 import { Item } from '../item/Item';
 import { Transaction } from './Transaction';
 
@@ -21,7 +21,7 @@ export class PointTransaction {
   user!: User;
 
   @Property()
-  amount!: number;
+  amount!: number; // Số dương (+) hoặc âm (-)
 
   @Enum(() => PointTransactionType)
   type!: PointTransactionType;
@@ -41,7 +41,7 @@ export class PointTransaction {
   @Property()
   balanceAfter!: number;
 
-  // SỬA Ở ĐÂY: Thêm dấu ?
+  // SỬA: Thêm dấu ?
   @Property({ onCreate: () => new Date() })
-  createdAt?: Date = new Date(); 
+  createdAt?: Date = new Date();
 }

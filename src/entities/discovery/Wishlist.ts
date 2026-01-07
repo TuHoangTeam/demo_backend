@@ -18,30 +18,29 @@ export class Wishlist {
   user!: User;
 
   @Property()
-  keyword!: string; // Từ khóa tìm kiếm (VD: "Sofa", "Iphone")
+  keyword!: string;
 
   @ManyToOne(() => Category, { nullable: true })
-  category?: Category; // Có thể null nếu user muốn tìm trong tất cả danh mục
+  category?: Category;
 
-  @Property({ default: 5000 }) // Mặc định 5km
-  maxDistance!: number; 
+  @Property({ default: 5000 })
+  maxDistance?: number = 5000; // Thêm ?
 
   @Enum(() => WishlistStatus)
   status: WishlistStatus = WishlistStatus.ACTIVE;
 
   @Property({ default: true })
-  notificationEnabled: boolean = true;
+  notificationEnabled?: boolean = true; // Thêm ?
 
   @Property({ default: 0 })
-  matchCount: number = 0; // Đếm số lượng món đồ đã tìm thấy khớp
+  matchCount?: number = 0; // Thêm ?
 
-  // Quan hệ 1-N: Một Wishlist có nhiều kết quả Match
   @OneToMany(() => WishlistMatch, match => match.wishlist)
   matches = new Collection<WishlistMatch>(this);
 
   @Property({ onCreate: () => new Date() })
-  createdAt: Date = new Date();
+  createdAt?: Date = new Date(); // Thêm ?
 
   @Property({ onUpdate: () => new Date() })
-  updatedAt: Date = new Date();
+  updatedAt?: Date = new Date(); // Thêm ?
 }

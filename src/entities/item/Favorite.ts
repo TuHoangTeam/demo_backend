@@ -3,7 +3,7 @@ import { User } from '../user/User';
 import { Item } from './Item';
 
 @Entity()
-@Unique({ properties: ['user', 'item'] }) // Ràng buộc: 1 user chỉ favorite 1 item 1 lần
+@Unique({ properties: ['user', 'item'] })
 export class Favorite {
   @PrimaryKey({ type: 'uuid', defaultRaw: 'gen_random_uuid()' })
   id!: string;
@@ -14,6 +14,7 @@ export class Favorite {
   @ManyToOne(() => Item)
   item!: Item;
 
+  // SỬA: Thêm dấu ?
   @Property({ onCreate: () => new Date() })
-  createdAt: Date = new Date();
+  createdAt?: Date = new Date();
 }

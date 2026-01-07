@@ -16,7 +16,7 @@ export class Notification {
   id!: string;
 
   @ManyToOne(() => User)
-  user!: User; // Người nhận thông báo
+  user!: User;
 
   @Enum(() => NotificationType)
   type!: NotificationType;
@@ -27,20 +27,20 @@ export class Notification {
   @Property()
   body!: string;
 
-  // Lưu dữ liệu bổ sung dạng JSON (PostgreSQL hỗ trợ rất tốt)
   @Property({ type: 'json', nullable: true })
   data?: object;
 
+  // SỬA: Thêm dấu ?
   @Property({ default: false })
-  isRead: boolean = false;
+  isRead?: boolean = false; 
 
-  // Các liên kết optional để tiện điều hướng
   @ManyToOne(() => Item, { nullable: true })
   relatedItem?: Item;
 
   @ManyToOne(() => User, { nullable: true })
-  relatedUser?: User; // Ví dụ: Người đã gửi tin nhắn/đánh giá
+  relatedUser?: User;
 
+  // SỬA: Thêm dấu ?
   @Property({ onCreate: () => new Date() })
-  createdAt: Date = new Date();
+  createdAt?: Date = new Date();
 }

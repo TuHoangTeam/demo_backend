@@ -4,16 +4,16 @@ import { Item } from '../item/Item';
 
 export enum ReportReason {
   SPAM = 'SPAM',
-  INAPPROPRIATE = 'INAPPROPRIATE', // Nội dung không phù hợp
-  SCAM = 'SCAM',                   // Lừa đảo
+  INAPPROPRIATE = 'INAPPROPRIATE',
+  SCAM = 'SCAM',
   OTHER = 'OTHER',
 }
 
 export enum ReportStatus {
-  PENDING = 'PENDING',     // Chờ xử lý
-  REVIEWING = 'REVIEWING', // Admin đang xem
-  RESOLVED = 'RESOLVED',   // Đã giải quyết (VD: Khóa acc)
-  REJECTED = 'REJECTED',   // Báo cáo sai
+  PENDING = 'PENDING',
+  REVIEWING = 'REVIEWING',
+  RESOLVED = 'RESOLVED',
+  REJECTED = 'REJECTED',
 }
 
 @Entity()
@@ -22,13 +22,13 @@ export class Report {
   id!: string;
 
   @ManyToOne(() => User)
-  reporter!: User; // Người báo cáo
+  reporter!: User;
 
   @ManyToOne(() => User, { nullable: true })
-  reportedUser?: User; // Người bị báo cáo (nếu có)
+  reportedUser?: User;
 
   @ManyToOne(() => Item, { nullable: true })
-  reportedItem?: Item; // Món đồ bị báo cáo (nếu có)
+  reportedItem?: Item;
 
   @Enum(() => ReportReason)
   reason!: ReportReason;
@@ -36,15 +36,17 @@ export class Report {
   @Property({ columnType: 'text' })
   description!: string;
 
+  // SỬA: Thêm dấu ?
   @Enum(() => ReportStatus)
-  status: ReportStatus = ReportStatus.PENDING;
+  status?: ReportStatus = ReportStatus.PENDING;
 
   @Property({ columnType: 'text', nullable: true })
-  adminNote?: string; // Ghi chú của Admin khi xử lý
+  adminNote?: string;
 
+  // SỬA: Thêm dấu ?
   @Property({ onCreate: () => new Date() })
-  createdAt: Date = new Date();
+  createdAt?: Date = new Date();
 
   @Property({ onUpdate: () => new Date() })
-  updatedAt: Date = new Date();
+  updatedAt?: Date = new Date();
 }

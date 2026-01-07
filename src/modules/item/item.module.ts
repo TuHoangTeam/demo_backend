@@ -3,20 +3,24 @@ import { MikroOrmModule } from '@mikro-orm/nestjs';
 import { MulterModule } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
+
 import { ItemController } from './item.controller';
+
+// Entities
 import { Item } from '../../entities/item/Item';
 import { User } from '../../entities/user/User';
 import { Category } from '../../entities/item/Category';
+import { Favorite } from '../../entities/item/Favorite'; // <--- 1. Import Entity này
 
 @Module({
   imports: [
-    MikroOrmModule.forFeature([Item, User, Category]),
-    // Cấu hình upload file
+    // 2. Thêm Favorite vào danh sách đăng ký
+    MikroOrmModule.forFeature([Item, User, Category, Favorite]), 
+    
     MulterModule.register({
       storage: diskStorage({
-        destination: './uploads/items', // Nơi lưu ảnh
+        destination: './uploads/items',
         filename: (req, file, cb) => {
-          // Tạo tên file ngẫu nhiên để không trùng: random + đuôi file gốc
           const randomName = Array(32).fill(null).map(() => (Math.round(Math.random() * 16)).toString(16)).join('');
           return cb(null, `${randomName}${extname(file.originalname)}`);
         },

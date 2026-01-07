@@ -14,17 +14,17 @@ export class UserAchievement {
   achievement!: Achievement;
 
   @Property({ default: 0 })
-  progress: number = 0; // Ví dụ: Đã cho được 5/10 món
+  progress?: number = 0;
 
   @Property({ default: false })
-  isCompleted: boolean = false;
+  isCompleted?: boolean = false;
 
   @Property({ nullable: true })
   completedAt?: Date;
 
   @Property({ onCreate: () => new Date() })
-  createdAt: Date = new Date();
+  createdAt?: Date = new Date();
 
   @Property({ onUpdate: () => new Date() })
-  updatedAt: Date = new Date();
+  updatedAt?: Date = new Date();
 }
