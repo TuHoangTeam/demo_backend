@@ -2,7 +2,7 @@ import { MikroORM } from '@mikro-orm/core';
 import { Test } from '@nestjs/testing';
 import { MikroOrmModule } from '@mikro-orm/nestjs';
 import config from '../../mikro-orm.config';
-import { User } from '../../entities/User';
+import { User } from '../../entities/user/User';
 import { UserController } from './user.controller';
 
 describe('user controller', () => {

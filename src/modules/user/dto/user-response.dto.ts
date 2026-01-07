@@ -1,33 +1,48 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { User } from '../../../entities/User';
+import { ApiProperty } from '@nestjs/swagger';
+import { User } from '../../../entities/user/User';
 
 export class UserResponseDto {
-  @ApiProperty({ example: 1, description: 'The unique ID of the user' })
-  id: number;
+  @ApiProperty()
+  id: string;
 
-  @ApiProperty({ example: 'John Doe', description: 'The name of the user' })
+  @ApiProperty()
+  email: string;
+
+  @ApiProperty()
   name: string;
 
-  @ApiPropertyOptional({ example: 30, description: 'The age of the user (optional)' })
-  age?: number;
+  @ApiProperty({ nullable: true })
+  avatar?: string;
 
-  @ApiProperty({
-    description: 'The date and time the user was created',
-    example: '2025-11-08T16:56:00.000Z',
-  })
+  @ApiProperty({ nullable: true })
+  phone?: string;
+
+  @ApiProperty({ nullable: true })
+  bio?: string;
+
+  @ApiProperty({ nullable: true })
+  location?: string;
+
+  @ApiProperty()
+  gPoints: number;
+
+  @ApiProperty()
+  rating: number;
+
+  @ApiProperty()
   createdAt: Date;
-
-  @ApiProperty({
-    description: 'The date and time the user was last updated',
-    example: '2025-11-08T16:56:00.000Z',
-  })
-  updatedAt: Date;
 
   constructor(user: User) {
     this.id = user.id;
+    this.email = user.email;
     this.name = user.name;
-    this.age = user.age;
-    this.createdAt = user.createdAt;
-    this.updatedAt = user.updatedAt;
+    this.avatar = user.avatar;
+    this.phone = user.phone;
+    this.bio = user.bio;
+    this.location = user.location;
+    // Dùng ?? 0 để tránh lỗi undefined nếu entity chưa set
+    this.gPoints = user.gPoints ?? 0;
+    this.rating = user.rating ?? 0;
+    this.createdAt = user.createdAt ?? new Date();
   }
 }

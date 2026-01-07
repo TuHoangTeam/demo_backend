@@ -3,16 +3,18 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { OrmModule } from './modules/orm.module'; // Module cấu hình DB chung
 import { UserModule } from './modules/user/user.module';
-import { ProductModule } from './modules/product/product.module';
+import { ItemModule } from './modules/item/item.module';
 // Import module mới tạo
-import { ReviewsModule } from './modules/reviews/reviews.module'; 
+import { RatingModule } from './modules/rating/rating.module';
+import { TransactionModule } from './modules/transaction/transaction.module';
 
 @Module({
   imports: [
     OrmModule, 
     UserModule, 
-    ProductModule, 
-    ReviewsModule // Thêm vào đây
+    ItemModule, 
+    RatingModule,
+    TransactionModule
   ],
   // CHỈ GIỮ LẠI AppController, xóa các controller khác đi
   // Vì chúng đã nằm trong UserModule, ProductModule, ReviewsModule rồi
