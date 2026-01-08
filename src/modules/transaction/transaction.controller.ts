@@ -1,7 +1,9 @@
-import { Body, Controller, Get, Post, Patch, Param, HttpException, HttpStatus, Query, ParseUUIDPipe } from '@nestjs/common';
-import { ApiOperation, ApiResponse, ApiTags, ApiQuery } from '@nestjs/swagger';
+import { Body, Controller, Get, Post, Patch, Param, HttpException, HttpStatus, Query, ParseUUIDPipe, UseGuards, Req } from '@nestjs/common';
+import { ApiOperation, ApiResponse, ApiTags, ApiQuery, ApiBearerAuth } from '@nestjs/swagger';
 import { InjectRepository } from '@mikro-orm/nestjs';
 import { EntityRepository, EntityManager } from '@mikro-orm/postgresql';
+import { AuthGuard } from '@nestjs/passport'; // <--- Thêm cái này
+import type { Request } from 'express';      // <--- Thêm cái này
 
 // Import Entities
 import { Transaction, TransactionStatus } from '../../entities/commerce/Transaction';
@@ -26,38 +28,38 @@ export class TransactionController {
 
   // 1. TẠO GIAO DỊCH (XIN ĐỒ)
   @Post()
+  @UseGuards(AuthGuard('jwt')) // <--- Bắt buộc đăng nhập
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Request an item (Create Transaction)' })
-  async create(@Body() dto: CreateTransactionDto) {
-    // A. Giả lập lấy User đang đăng nhập (SAU NÀY LẤY TỪ JWT)
-    // Tạm thời lấy user khác owner của item
+  async create(@Req() req: any, @Body() dto: CreateTransactionDto) {
+    // 1. Lấy User thật từ Token (Thay vì Fake)
+    const currentUserId = req.user.id;
+    const currentUser = await this.userRepo.findOne(currentUserId);
+    if (!currentUser) throw new HttpException('User not found', HttpStatus.UNAUTHORIZED);
+
     const item = await this.itemRepo.findOne(dto.itemId, { populate: ['owner'] });
     if (!item) throw new HttpException('Item not found', HttpStatus.NOT_FOUND);
 
-    // Không được xin đồ của chính mình
-    // const currentUserId = req.user.id; // TODO: Real logic
-    // if (item.owner.id === currentUserId) ...
+    // 2. Validate: Không được xin đồ của chính mình
+    if (item.owner.id === currentUserId) {
+      throw new HttpException('Cannot request your own item', HttpStatus.BAD_REQUEST);
+    }
 
-    // Fake user nhận (người dùng thứ 2 trong DB chẳng hạn)
-    const receiver = await this.userRepo.findOne({ email: { $ne: item.owner.email } }); 
-    if (!receiver) throw new HttpException('Receiver not found for testing', HttpStatus.BAD_REQUEST);
-
-    // B. Validate Logic
+    // 3. Validate trạng thái Item
     if (item.status !== ItemStatus.AVAILABLE) {
       throw new HttpException('Item is not available', HttpStatus.BAD_REQUEST);
     }
-    // Kiểm tra điểm (nếu cần): if (receiver.gPoints < 5) throw ...
 
-    // C. Tạo Transaction
+    // 4. Tạo Transaction
     const transaction = this.transactionRepo.create({
       item: item,
       giver: item.owner,
-      receiver: receiver,
+      receiver: currentUser, // Người nhận chính là người đang gọi API
       status: TransactionStatus.PENDING,
       meetingLocation: dto.meetingLocation,
       meetingTime: dto.meetingTime,
     });
 
-    // D. Cập nhật trạng thái Item để không ai xin được nữa
     item.status = ItemStatus.PENDING;
 
     await this.em.flush();
@@ -66,32 +68,41 @@ export class TransactionController {
 
   // 2. NGƯỜI CHO XÁC NHẬN (CONFIRM GIVER)
   @Patch(':id/confirm-giver')
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Giver confirms the request' })
-  async confirmGiver(@Param('id', ParseUUIDPipe) id: string) {
+  async confirmGiver(@Param('id', ParseUUIDPipe) id: string, @Req() req: any) {
     const transaction = await this.transactionRepo.findOne(id, { populate: ['item', 'giver', 'receiver'] });
     if (!transaction) throw new HttpException('Transaction not found', HttpStatus.NOT_FOUND);
 
-    // TODO: Check if current user is Giver
+    // Validate: Chỉ người cho (Owner) mới được confirm
+    if (transaction.giver.id !== req.user.id) {
+      throw new HttpException('Only the giver can confirm this', HttpStatus.FORBIDDEN);
+    }
 
     transaction.giverConfirmed = true;
-    transaction.status = TransactionStatus.CONFIRMED; // Chuyển sang trạng thái chờ gặp
+    transaction.status = TransactionStatus.CONFIRMED;
     
-    // TODO: Gửi thông báo cho Receiver: "Người cho đã đồng ý!"
-
     await this.em.flush();
     return new TransactionResponseDto(transaction);
   }
 
   // 3. NGƯỜI NHẬN XÁC NHẬN ĐÃ LẤY (CONFIRM RECEIVER)
   @Patch(':id/confirm-receiver')
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Receiver confirms receipt' })
-  async confirmReceiver(@Param('id', ParseUUIDPipe) id: string) {
+  async confirmReceiver(@Param('id', ParseUUIDPipe) id: string, @Req() req: any) {
     const transaction = await this.transactionRepo.findOne(id, { populate: ['item', 'giver', 'receiver'] });
     if (!transaction) throw new HttpException('Transaction not found', HttpStatus.NOT_FOUND);
 
+    // Validate: Chỉ người nhận mới được confirm
+    if (transaction.receiver.id !== req.user.id) {
+        throw new HttpException('Only the receiver can confirm this', HttpStatus.FORBIDDEN);
+    }
+
     transaction.receiverConfirmed = true;
     
-    // Nếu cả 2 đều đã confirm -> Tự động hoàn tất (Complete)
     if (transaction.giverConfirmed) {
       return this.completeTransaction(transaction);
     }
@@ -109,15 +120,12 @@ export class TransactionController {
     return this.completeTransaction(transaction);
   }
 
-  // LOGIC XỬ LÝ ĐIỂM VÀ CO2
   private async completeTransaction(transaction: Transaction) {
     if (transaction.status === TransactionStatus.COMPLETED) return new TransactionResponseDto(transaction);
 
-    // 1. Cập nhật trạng thái Transaction
     transaction.status = TransactionStatus.COMPLETED;
     transaction.completedAt = new Date();
 
-    // 2. Tính toán điểm & CO2
     const POINTS_REWARD = 10;
     const POINTS_COST = 5;
     const co2Saved = transaction.item.estimatedCO2 || 0;
@@ -126,22 +134,18 @@ export class TransactionController {
     transaction.receiverPointsPaid = POINTS_COST;
     transaction.co2Saved = co2Saved;
 
-    // 3. Cập nhật Người Cho (Giver)
     const giver = transaction.giver;
     giver.gPoints = (giver.gPoints ?? 0) + POINTS_REWARD;
     giver.totalCO2Saved = (giver.totalCO2Saved ?? 0) + co2Saved;
     giver.totalItemsGiven = (giver.totalItemsGiven ?? 0) + 1;
 
-    // 4. Cập nhật Người Nhận (Receiver)
     const receiver = transaction.receiver;
     receiver.gPoints = (receiver.gPoints ?? 0) - POINTS_COST;
     receiver.totalItemsReceived = (receiver.totalItemsReceived ?? 0) + 1;
 
-    // 5. Cập nhật Item
     transaction.item.status = ItemStatus.COMPLETED;
 
-    // 6. Ghi lịch sử điểm (Audit Log)
-    const logGiver = this.pointRepo.create({
+    this.pointRepo.create({
       user: giver,
       amount: POINTS_REWARD,
       type: PointTransactionType.ITEM_GIVEN,
@@ -151,7 +155,7 @@ export class TransactionController {
       balanceAfter: giver.gPoints ?? 0,
     });
 
-    const logReceiver = this.pointRepo.create({
+    this.pointRepo.create({
       user: receiver,
       amount: -POINTS_COST,
       type: PointTransactionType.ITEM_RECEIVED,
@@ -167,12 +171,15 @@ export class TransactionController {
 
   // 5. LẤY DANH SÁCH GIAO DỊCH CỦA TÔI
   @Get('my')
+  @UseGuards(AuthGuard('jwt')) // <--- SỬA: Dùng Guard thật
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Get my transactions' })
   async getMyTransactions(
+    @Req() req: any, // <--- SỬA: Inject Request
     @Query('status') status?: TransactionStatus
   ) {
-    // Fake user ID
-    const userId = (await this.userRepo.findOne({}))?.id; 
+    // SỬA: Lấy ID thật từ Token (Không fake query DB nữa -> Hết lỗi empty where)
+    const userId = req.user.id; 
 
     const filters: any = {
       $or: [{ giver: userId }, { receiver: userId }]

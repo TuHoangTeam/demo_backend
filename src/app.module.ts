@@ -28,6 +28,7 @@ import { StatisticsModule } from './modules/system/statistics/statistics.module'
     // 1. Cấu hình Config (Load .env)
     ConfigModule.forRoot({
       isGlobal: true, 
+      envFilePath: '.env',
     }),
 
     // 2. Database
