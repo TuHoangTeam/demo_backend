@@ -3,10 +3,12 @@ import { AuthGuard } from '@nestjs/passport';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { ApiBearerAuth, ApiOperation, ApiConsumes, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { InjectRepository } from '@mikro-orm/nestjs';
-import { EntityRepository, EntityManager } from '@mikro-orm/postgresql'; // Import từ Driver cụ thể
+import { EntityRepository, EntityManager } from '@mikro-orm/postgresql'; 
 import { QueryOrder, wrap } from '@mikro-orm/core';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
+// QUAN TRỌNG: Dùng import type để tránh lỗi metadata
+import type { Request } from 'express'; 
 
 // Entities
 import { Item, ItemStatus } from '../../entities/item/Item';
@@ -30,6 +32,30 @@ export class ItemController {
     private readonly em: EntityManager,
   ) {}
 
+  // --- HELPER FUNCTION: Tự động ghép URL ---
+  private toFullUrl(req: Request, path: string): string {
+    if (!path) return '';
+    if (path.startsWith('http')) return path; // Nếu đã là link online thì giữ nguyên
+    
+    const protocol = req.protocol;
+    const host = req.get('host'); 
+    return `${protocol}://${host}/${path}`;
+  }
+
+  // Hàm xử lý data Item trước khi trả về (Map ảnh item + ảnh owner)
+  private mapItemUrls(req: Request, item: Item) {
+    // 1. Xử lý ảnh của món đồ (Mảng ảnh)
+    if (item.images && item.images.length > 0) {
+      item.images = item.images.map(img => this.toFullUrl(req, img));
+    }
+
+    // 2. Xử lý Avatar của người đăng (nếu đã populate owner)
+    if (item.owner && item.owner.avatar) {
+      item.owner.avatar = this.toFullUrl(req, item.owner.avatar);
+    }
+  }
+  // ----------------------------------------
+
   // 1. ĐĂNG BÁN MÓN ĐỒ MỚI
   @Post()
   @UseGuards(AuthGuard('jwt'))
@@ -46,33 +72,37 @@ export class ItemController {
   }))
   @ApiOperation({ summary: 'Create new item' })
   async create(@Req() req: any, @Body() dto: CreateItemDto, @UploadedFiles() files: Array<Express.Multer.File>) {
-    // req.user là User Entity (do JwtStrategy trả về) -> Gán trực tiếp vào owner
+    const request = req as Request; // Ép kiểu request
     const currentUser = req.user; 
     
     const category = await this.categoryRepo.findOne(dto.categoryId);
     if (!category) throw new HttpException('Category not found', HttpStatus.NOT_FOUND);
 
-    const imageUrls = files ? files.map(f => `http://localhost:3000/uploads/items/${f.filename}`) : [];
+    // SỬA: Chỉ lưu đường dẫn tương đối vào Database
+    // VD: "uploads/items/abc.jpg" thay vì "http://localhost..."
+    const imagePaths = files ? files.map(f => `uploads/items/${f.filename}`) : [];
 
     const item = this.itemRepo.create({
       ...dto,
-      owner: currentUser, // FIX: Truyền entity User thay vì string ID để response có name/avatar
+      owner: currentUser,
       category: category,
-      images: imageUrls,
+      images: imagePaths, // Lưu path ngắn gọn
       status: ItemStatus.AVAILABLE,
-      // Các trường optional như views, favorites sẽ lấy default từ Entity
     });
 
     await this.em.flush();
     
+    // Trước khi trả về cho Client, convert sang Full URL
+    this.mapItemUrls(request, item);
+
     return new ItemResponseDto(item);
   }
 
   // 2. TÌM KIẾM & LỌC MÓN ĐỒ
   @Get()
   @ApiOperation({ summary: 'Get all items with filters' })
-  async findAll(@Query() query: ItemQueryDto) {
-    // --- SỬA DÒNG NÀY: Dùng this.em thay vì this.itemRepo ---
+  async findAll(@Query() query: ItemQueryDto, @Req() req: any) {
+    const request = req as Request;
     const qb = this.em.createQueryBuilder(Item, 'i');
     
     qb.select('*').leftJoinAndSelect('i.category', 'c').leftJoinAndSelect('i.owner', 'o');
@@ -90,6 +120,10 @@ export class ItemController {
     }
 
     const items = await qb.getResult();
+    
+    // XỬ LÝ URL ẢNH CHO TOÀN BỘ DANH SÁCH
+    items.forEach(item => this.mapItemUrls(request, item));
+
     let result = items;
 
     // Filter theo bán kính
@@ -121,21 +155,23 @@ export class ItemController {
   @Get(':id')
   @ApiOperation({ summary: 'Get item detail' })
   async findOne(@Req() req: any, @Param('id', ParseUUIDPipe) id: string, @Query('lat') lat?: number, @Query('lng') lng?: number) {
+    const request = req as Request;
     const item = await this.itemRepo.findOne(id, { populate: ['owner', 'category'] });
     if (!item) throw new HttpException('Item not found', HttpStatus.NOT_FOUND);
 
-    // Dùng toán tử ?? để cộng dồn an toàn
+    // Tăng view
     item.views = (item.views ?? 0) + 1;
     await this.em.flush();
 
-    // --- SỬA DÒNG NÀY: Khai báo kiểu rõ ràng ---
-    let distance: number | undefined = undefined; 
+    // XỬ LÝ URL TRƯỚC KHI TRẢ VỀ
+    this.mapItemUrls(request, item);
 
+    let distance: number | undefined = undefined; 
     if (lat && lng) {
       distance = Math.round(this.calculateDistance(lat, lng, item.latitude, item.longitude));
     }
 
-    return new ItemResponseDto(item, distance); // isFavorited đang tạm bỏ qua
+    return new ItemResponseDto(item, distance); 
   }
 
   // 4. QUẢN LÝ ĐỒ CỦA TÔI
@@ -144,7 +180,9 @@ export class ItemController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get my items' })
   async getMyItems(@Req() req: any, @Query('status') status?: ItemStatus) {
-    const userId = req.user.id;
+    const request = req as Request;
+    const userId = (request.user as any).id;
+    
     const filters: any = { owner: userId };
     if (status) filters.status = status;
 
@@ -152,6 +190,9 @@ export class ItemController {
       populate: ['category'],
       orderBy: { createdAt: QueryOrder.DESC }
     });
+
+    // XỬ LÝ URL
+    items.forEach(item => this.mapItemUrls(request, item));
 
     return items.map(i => new ItemResponseDto(i));
   }
@@ -162,7 +203,8 @@ export class ItemController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Update item' })
   async update(@Req() req: any, @Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdateItemDto) {
-    const userId = req.user.id;
+    const request = req as Request;
+    const userId = (request.user as any).id;
     const item = await this.itemRepo.findOne(id, { populate: ['owner'] });
 
     if (!item) throw new HttpException('Item not found', HttpStatus.NOT_FOUND);
@@ -170,6 +212,9 @@ export class ItemController {
 
     wrap(item).assign(dto);
     await this.em.flush();
+
+    // XỬ LÝ URL
+    this.mapItemUrls(request, item);
 
     return new ItemResponseDto(item);
   }
@@ -180,7 +225,8 @@ export class ItemController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Delete item' })
   async remove(@Req() req: any, @Param('id', ParseUUIDPipe) id: string) {
-    const userId = req.user.id;
+    const request = req as Request;
+    const userId = (request.user as any).id; // Fix cách lấy ID
     const item = await this.itemRepo.findOne(id, { populate: ['owner'] });
 
     if (!item) throw new HttpException('Item not found', HttpStatus.NOT_FOUND);

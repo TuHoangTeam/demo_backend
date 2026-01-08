@@ -59,4 +59,12 @@ export default defineConfig({
 
   debug: process.env.NODE_ENV !== 'production',
   logger: logger.log.bind(logger),
+
+  // seeder: {
+  //   path: './src/seeders', // Đường dẫn folder
+  //   defaultSeeder: 'DatabaseSeeder', // Tên class mặc định
+  //   glob: '!(*.d).{js,ts}', 
+  //   emit: 'ts', 
+  //   fileName: (className: string) => className, 
+  // },
 });
