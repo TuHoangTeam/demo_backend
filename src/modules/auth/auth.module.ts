@@ -20,7 +20,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: async (configService: ConfigService) => ({
-        secret: configService.get<string>('JWT_SECRET'), // Lấy từ .env
+        secret: configService.get<string>('JWT_SECRET') || 'defaultSecretKey', // Lấy từ .env
         signOptions: { expiresIn: '7d' },
       }),
     }),

@@ -21,9 +21,9 @@
   },
   "dependencies": {
     "@google-cloud/logging-winston": "^6.0.1",
-    "@mikro-orm/core": "^6.5.9",
+    "@mikro-orm/core": "^6.6.3",
     "@mikro-orm/nestjs": "^6.1.1",
-    "@mikro-orm/postgresql": "^6.5.9",
+    "@mikro-orm/postgresql": "^6.6.3",
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.2",
     "@nestjs/core": "^11.0.1",
@@ -45,6 +45,7 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",
     "@eslint/js": "^9.18.0",
+    "@mikro-orm/cli": "^6.6.3",
     "@nestjs/cli": "^11.0.0",
     "@nestjs/schematics": "^11.0.0",
     "@nestjs/testing": "^11.0.1",
